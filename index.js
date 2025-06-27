@@ -28,9 +28,22 @@ async function run() {
     await client.connect();
 
 
-    
+    // Get the database and collection on which to run the operation
+    const allFoodsCollection = client.db("cakey'sTwistedBakery").collection('allFoods');
 
 
+    // Top Food Section from Home Page:
+    app.get('/topFoods', async (req, res) => {
+      const query = {rating: { $gt: 4.5 }}
+      const result = await allFoodsCollection.find(query).limit(8).toArray();
+      res.send(result)
+    })
+
+    // create AllFoods data:
+    app.get('/allFoods', async (req, res) => {
+      const result = await allFoodsCollection.find().toArray();
+      res.send(result)
+    })
 
 
 
