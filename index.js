@@ -39,13 +39,28 @@ async function run() {
       res.send(result)
     })
 
-    // create AllFoods data:
+    // create AllFoods data with pagination:
     app.get('/allFoods', async (req, res) => {
-      const result = await allFoodsCollection.find().toArray();
-      res.send(result)
+      const page = parseInt(req.query.page) || 0;
+      const limit = parseInt(req.query.limit) || 10;
+      const skip = page * limit;
+      // Fetch total number of documents
+      const totalItems = await allFoodsCollection.estimatedDocumentCount();
+    
+    
+      
+      const result = await allFoodsCollection
+      .find()
+      .skip(skip)
+      .limit(limit)
+      .toArray()
+      res.send({
+      foods: result,
+      totalItems: totalItems,
+    });
     })
 
-
+    
 
 
 
