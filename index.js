@@ -1,17 +1,22 @@
 const express = require('express')
 const app = express()
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 require('dotenv').config()
-const axios = require('axios').default;
+const jwt = require('jsonwebtoken');
 const port = process.env.PORT || 5000;
 
 // middleware
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:5173',
+  credentials: true
+}));
 app.use(express.json());
+app.use(cookieParser());
 
 // MongoDb Start ---------------------------------------------------------------------------------------------------------------------------------------
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.ekx13wz.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
@@ -21,11 +26,24 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   }
 });
-
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
+
+    // Jwt token
+    const secret = process.env.JWT_SECRET;
+    app.post('/jwt', (req, res )=> {
+      const user = req.body;
+      const token = jwt.sign(user, secret, {expiresIn: '1h'});
+      res
+      .cookie('token', token, {
+        httpOnly: true,
+        secure: false,
+        sameSite: 'none'
+      })
+      .send({success: true})
+    })
 
 
     // Get the database and collection on which to run the operation
@@ -47,8 +65,6 @@ async function run() {
       // Fetch total number of documents
       const totalItems = await allFoodsCollection.estimatedDocumentCount();
     
-    
-      
       const result = await allFoodsCollection
       .find()
       .skip(skip)
@@ -60,7 +76,13 @@ async function run() {
     });
     })
 
-    
+    // Get Single Food:
+    app.get(`/allFoods/:id`, async (req, res) => {
+      const id = req.params.id;
+      const query = {_id : new ObjectId(id)};
+      const result = await allFoodsCollection.findOne(query);
+      res.send(result);
+    })
 
 
 
